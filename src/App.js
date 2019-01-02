@@ -3,6 +3,15 @@ import logo from './logo.svg';
 import './App.css';
 
 class App extends Component {
+  async componentDidMount() {
+    const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+    const recorder = new MediaRecorder(stream)
+    recorder.ondataavailable = (e) => {
+      const data = e.data;
+      console.log(data)
+    }
+  }
+
   render() {
     return (
       <div className="App">
