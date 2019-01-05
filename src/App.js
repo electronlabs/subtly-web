@@ -1,33 +1,75 @@
 import React, { Component } from "react";
-import io from "socket.io-client";
+import axios from "axios";
 import logo from "./logo.svg";
 import "./App.css";
 
 class App extends Component {
   async componentDidMount() {
-    const socket = io("http://localhost:5000")
-    socket.on("connect", async () => {
-      console.log("connected");
-      const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+    const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
 
-      var options = {
-        audioBitsPerSecond: 16000,
-        mimeType: "audio/webm;codecs=pcm"
-      };
+    var options = {
+      audioBitsPerSecond: 16000,
+      mimeType: "audio/webm;codecs=pcm"
+    };
 
-      const recorder = new MediaRecorder(stream, options);
+    const recorder = new MediaRecorder(stream, options);
 
-      recorder.start(1000)
+    recorder.start(1000);
 
-      recorder.ondataavailable = e => {
-        console.log('data available')
-        const data = e.data;
+    recorder.ondataavailable = async e => {
+      console.log("data available");
+      const body = JSON.stringify({
+        AudioStream: {
+          AudioEvent: {
+            AudioChunk: e.data
+          }
+        }
+      });
 
-        socket.emit("audio chunk", { audio: data });
-      };
+      // const headers = new Headers({
+      //   'content-type': 'application/json',
+      //   'x-amzn-transcribe-language-code': 'en-US',
+      //   'x-amzn-transcribe-sample-rate': '16000',
+      //   'x-amzn-transcribe-media-encoding': 'pcm',
+      // })
 
-      socket.on("subtitles", text => console.log(text));
-    });
+      // const result = await fetch('https://transcribestreaming.eu-west-1.amazonaws.com/stream-transcription', {
+      //   method: 'POST',
+      //   headers: headers,
+      //   body: body,
+      // });
+
+      // console.log(result)
+
+      // const xhr = new XMLHttpRequest();
+      // xhr.open("POST", "https://transcribestreaming.eu-west-1.amazonaws.com/stream-transcription");
+      // xhr.setRequestHeader("content-type", "application/json");
+      // xhr.setRequestHeader("x-amzn-transcribe-language-code", "en-US");
+      // xhr.setRequestHeader("x-amzn-transcribe-sample-rate", "16000");
+      // xhr.setRequestHeader("x-amzn-transcribe-media-encoding", "pcm");
+
+      // xhr.onreadystatechange = function() {
+      //   console.log("onreadystatechange");
+      //   if (xhr.readyState === 4) {
+      //     console.log(xhr.response);
+      //   }
+      // };
+
+      // xhr.send(body);
+
+      axios({
+        method: "post",
+        url: "/stream-transcription",
+        baseURL: "https://transcribestreaming.eu-west-1.amazonaws.com/",
+        headers: {
+          "content-type": "application/json",
+          "x-amzn-transcribe-language-code": "en-US",
+          "x-amzn-transcribe-sample-rate": "16000",
+          "x-amzn-transcribe-media-encoding": "pcm"
+        },
+        data: body,
+      });
+    };
   }
 
   render() {
